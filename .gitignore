@@ -1,0 +1,14 @@
+# build outputs
+/build/
+build/
+
+# macOS
+.DS_Store
+
+# editor/IDE
+.vscode/
+.idea/
+
+# Token
+tokens/
+
