@@ -10,9 +10,9 @@ add_executable(fix_dropcopy
     src/application.cpp
     src/socket.cpp
     src/config_parser.cpp
-    src/token_handler.cpp
     src/fix_message.cpp
     src/fix_session.cpp
+    src/seq_store.cpp
 )
 
 target_include_directories(fix_dropcopy PRIVATE include)

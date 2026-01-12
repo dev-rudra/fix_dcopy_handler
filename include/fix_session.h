@@ -15,7 +15,8 @@ public:
                             int heart_bt_int,
                             bool reset_on_logon);
 
-    void set_token(const std::string& token_value);
+    // Set next outgoing MsgSeqNum(34=) to use for the next send
+    void set_outgoing_seq_num(int next_outgoing_seq);
 
     std::string build_logon_message();
     std::string build_heartbeat_message(const std::string& test_req_id);

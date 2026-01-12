@@ -65,9 +65,11 @@ void FixSession::set_session_values(const std::string& begin_string_value,
     reset_on_logon = reset_on_logon_value;
 }
 
-// Store token value
-void FixSession::set_token(const std::string& token_value_value) {
-    token_value = token_value_value;
+// Set next outgoing MsgSeqNum
+void FixSession::set_outgoing_seq_num(int next_outgoing_seq) {
+    if (next_outgoing_seq > 0) {
+        outgoing_seq_num = next_outgoing_seq;
+    }
 }
 
 // Current outgoing SeqNumber (tag 34 for next send)
@@ -109,9 +111,6 @@ std::string FixSession::build_logon_message() {
     if (!password.empty()) {
         msg.add_string_field(554, password);
     }
-
-    // Token tag is venue-specific; keep token stored but do not inject by default.
-    // if (!token_value.empty()) { msg.add_string_field(<token_tag>, token_value); }
 
     outgoing_seq_num += 1;
     return msg.build_message();

@@ -7,8 +7,8 @@
 
 #include "config_parser.h"
 #include "fix_session.h"
+#include "seq_store.h"
 #include "socket.h"
-#include "token_handler.h"
 
 static std::string soh_to_pipe(const std::string& fix_data) {
     std::string printable = fix_data;
@@ -45,9 +45,6 @@ int Application::run() {
         heart_bt_int = std::stoi(heartbeat_interval_str);
     }
 
-    TokenHandler token_handler;
-    const std::string token_value = token_handler.get_token(sender_comp_id);
-
     FixSession session;
     session.set_session_values(
         begin_string,
@@ -58,7 +55,13 @@ int Application::run() {
         heart_bt_int,
         reset_on_logon
     );
-    session.set_token(token_value);
+
+    SeqStore seq_store;
+
+    if (!reset_on_logon) {
+        const int next_out_seq = seq_store.load_next_outgoing_seq(sender_comp_id, target_comp_id);
+        session.set_outgoing_seq_num(next_out_seq);
+    }
 
     Socket socket;
     if (!socket.connect_to_server(server_ip, static_cast<std::uint16_t>(server_port))) {
@@ -73,6 +76,8 @@ int Application::run() {
         std::cerr << "failed to send logon\n";
         return 1;
     }
+
+    seq_store.save_next_outgoing_seq(sender_comp_id, target_comp_id, session.get_outgoing_seq_num());
 
     std::cout << "sent logon: " << soh_to_pipe(logon_message) << "\n";
 
