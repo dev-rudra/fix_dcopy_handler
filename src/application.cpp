@@ -21,6 +21,11 @@ static std::string soh_to_pipe(const std::string& fix_data) {
     return printable;
 }
 
+static int to_int(const std::string& s) {
+    if (s.empty()) return 0;
+    return std::stoi(s);
+}
+
 static std::string get_tag(const std::string& fix, const char* tag) {
     const char soh = '\x01';
     const std::string key = std::string(tag) + "=";
@@ -121,6 +126,46 @@ int Application::run() {
             const std::string seq_num = get_tag(raw, "34");
 
             std::cout << "[recv] < " << fix_printer::printable(raw) << "\n";
+
+            // Incoming seq handle
+            const int in_seq = to_int(seq_num);
+            const int expected = session.get_expected_incoming_seq_num();
+
+            // Gapfill: 35=4, 123=Y, 36=NewSeqNo
+            if (msg_type == "4") {
+                const std::string gap_fill = get_tag(raw, "123");
+                if (gap_fill == "Y") {
+                    const int new_seq = to_int(get_tag(raw, "36"));
+                    if (new_seq > 0) {
+                        int cur = session.get_expected_incoming_seq_num();
+                        while (cur < new_seq) {
+                            session.on_incoming_seq_num(cur);
+                            cur = session.get_expected_incoming_seq_num();
+                        }
+                    }
+                }
+                continue;
+            }
+
+            // Gap, request resend from expected(Limited window may require repeating)
+            if (in_seq > 0 && in_seq > expected) {
+                const std::string resend_request = session.build_resend_request_message(expected, 0);
+                if (socket.send_bytes(resend_request)) {
+                    seq_store.save_next_outgoing_seq(sender_comp_id, target_comp_id, session.get_outgoing_seq_num());
+                    std::cout << "Sent RR: " << fix_printer::printable(resend_request) << "\n";
+                }
+                continue;
+            }
+
+            // Duplicate/Old: Ignore
+            if (in_seq > 0 && in_seq < expected) {
+                continue;
+            }
+
+            // Seq Ok, Move to next expected
+            if (in_seq > 0) {
+                session.on_incoming_seq_num(in_seq);
+            }
 
             if (msg_type == "1") {
                 const std::string test_req_id = get_tag(raw, "112");

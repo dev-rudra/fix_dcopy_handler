@@ -18,6 +18,9 @@ public:
     // Set next outgoing MsgSeqNum(34=) to use for the next send
     void set_outgoing_seq_num(int next_outgoing_seq);
 
+    // Set expected Incoming MsgSeqNum(Gapfill/recover)
+    void set_expected_incoming_seq_num(int next_expected_incoming_seq);
+
     std::string build_logon_message();
     std::string build_heartbeat_message(const std::string& test_req_id);
     std::string build_logout_message(const std::string& logout_reason);

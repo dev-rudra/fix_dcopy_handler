@@ -72,6 +72,13 @@ void FixSession::set_outgoing_seq_num(int next_outgoing_seq) {
     }
 }
 
+//Gapfill/Recover
+void FixSession::set_expected_incoming_seq_num(int next_expected_incoming_seq) {
+    if (next_expected_incoming_seq > 0) {
+        expected_incoming_seq_num = next_expected_incoming_seq;
+    }
+}
+
 // Current outgoing SeqNumber (tag 34 for next send)
 int FixSession::get_outgoing_seq_num() const {
     return outgoing_seq_num;
