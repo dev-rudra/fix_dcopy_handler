@@ -46,7 +46,7 @@ static std::string get_tag(const std::string& fix, const char* tag) {
 }
 
 static void print_usage() {
-    std::cout << "Usage: fix_dropcopy [--recover]\n";
+    std::cout << "Usage: fix_dropcopy [--recover] [--reset]\n";
 }
 
 int Application::run() {
@@ -55,12 +55,18 @@ int Application::run() {
 
 int Application::run(int argc, char** argv) {
     bool recover = false;
+    bool reset = false;
 
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i];
 
         if (a == "--recover") {
             recover = true;
+            continue;
+        }
+        
+        if (a == "--reset") {
+            reset = true;
             continue;
         }
 
@@ -92,6 +98,10 @@ int Application::run(int argc, char** argv) {
         reset_on_logon = false;
     }
 
+    if (reset) {
+        reset_on_logon = true;
+    }
+
     int heart_bt_int = 30;
     if (!heartbeat_interval_str.empty()) {
         heart_bt_int = std::stoi(heartbeat_interval_str);
@@ -109,6 +119,11 @@ int Application::run(int argc, char** argv) {
     );
 
     SeqStore seq_store;
+
+    if (reset) {
+        seq_store.save_next_outgoing_seq(sender_comp_id, target_comp_id, 1);
+        seq_store.save_expected_incoming_seq(sender_comp_id, target_comp_id, 1);
+    }
 
     if (!reset_on_logon) {
         const int next_out_seq = seq_store.load_next_outgoing_seq(sender_comp_id, target_comp_id);
