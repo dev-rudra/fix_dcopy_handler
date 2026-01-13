@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "config_parser.h"
+#include "fix_printer.h"
 #include "fix_session.h"
 #include "seq_store.h"
 #include "socket.h"
@@ -18,6 +19,25 @@ static std::string soh_to_pipe(const std::string& fix_data) {
         }
     }
     return printable;
+}
+
+static std::string get_tag(const std::string& fix, const char* tag) {
+    const char soh = '\x01';
+    const std::string key = std::string(tag) + "=";
+
+    size_t pos = 0;
+    while (true) {
+        size_t end = fix.find(soh, pos);
+        if (end == std::string::npos) break;
+
+        if (fix.compare(pos, key.size(), key) == 0) {
+            return fix.substr(pos + key.size(), end - (pos + key.size()));
+        }
+
+        pos = end + 1;
+    }
+
+    return "";
 }
 
 int Application::run() {
@@ -81,6 +101,8 @@ int Application::run() {
 
     std::cout << "sent logon: " << soh_to_pipe(logon_message) << "\n";
 
+    fix_printer printer;
+
     while (true) {
         std::vector<char> buffer;
         const int bytes_read = socket.recv_bytes(buffer, 4096);
@@ -89,8 +111,33 @@ int Application::run() {
             break;
         }
 
-        const std::string inbound(buffer.data(), static_cast<std::size_t>(bytes_read));
-        std::cout << "recv: " << soh_to_pipe(inbound) << "\n";
+        std::vector<std::string> msgs;
+        printer.feed(buffer.data(), (size_t)bytes_read, msgs);
+
+        for (size_t i = 0; i < msgs.size(); ++i) {
+            const std::string& raw = msgs[i];
+
+            const std::string msg_type = get_tag(raw, "35");
+            const std::string seq_num = get_tag(raw, "34");
+
+            std::cout << "[recv] < " << fix_printer::printable(raw) << "\n";
+
+            if (msg_type == "1") {
+                const std::string test_req_id = get_tag(raw, "112");
+
+                const std::string heart_beat = session.build_heartbeat_message(test_req_id);
+                if (socket.send_bytes(heart_beat)) {
+                    seq_store.save_next_outgoing_seq(sender_comp_id, target_comp_id, session.get_outgoing_seq_num());
+                    std::cout << "Sent HB: " << fix_printer::printable(heart_beat) << "\n";
+                }
+            }
+
+            // Logout -> exit
+            if (msg_type == "5") {
+                std::cout << "logout received\n";
+                return 0;
+            }
+        }
     }
 
     return 0;
