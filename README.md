@@ -61,4 +61,6 @@ Then client will continue from:
 * Last saved expected incoming seq `(*.in.seq)`
 
 ## Reset everything and start fresh
-
+```
+./fix_dropcopy --reset
+```

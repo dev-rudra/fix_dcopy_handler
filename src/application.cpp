@@ -146,7 +146,7 @@ int Application::run(int argc, char** argv) {
 
     seq_store.save_next_outgoing_seq(sender_comp_id, target_comp_id, session.get_outgoing_seq_num());
 
-    std::cout << "sent logon: " << soh_to_pipe(logon_message) << "\n";
+    std::cout << "[send] > " << soh_to_pipe(logon_message) << "\n";
 
     fix_printer printer;
 
@@ -196,7 +196,7 @@ int Application::run(int argc, char** argv) {
                 const std::string resend_request = session.build_resend_request_message(expected, 0);
                 if (socket.send_bytes(resend_request)) {
                     seq_store.save_next_outgoing_seq(sender_comp_id, target_comp_id, session.get_outgoing_seq_num());
-                    std::cout << "Sent RR: " << fix_printer::printable(resend_request) << "\n";
+                    std::cout << "[send] > " << fix_printer::printable(resend_request) << "\n";
                 }
                 continue;
             }
@@ -219,7 +219,7 @@ int Application::run(int argc, char** argv) {
                 const std::string heart_beat = session.build_heartbeat_message(test_req_id);
                 if (socket.send_bytes(heart_beat)) {
                     seq_store.save_next_outgoing_seq(sender_comp_id, target_comp_id, session.get_outgoing_seq_num());
-                    std::cout << "Sent HB: " << fix_printer::printable(heart_beat) << "\n";
+                    std::cout << "[send] > " << fix_printer::printable(heart_beat) << "\n";
                 }
             }
 
