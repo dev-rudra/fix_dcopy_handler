@@ -45,7 +45,31 @@ static std::string get_tag(const std::string& fix, const char* tag) {
     return "";
 }
 
+static void print_usage() {
+    std::cout << "Usage: fix_dropcopy [--recover]\n";
+}
+
 int Application::run() {
+    return run(0, nullptr);
+}
+
+int Application::run(int argc, char** argv) {
+    bool recover = false;
+
+    for (int i = 1; i < argc; ++i) {
+        const std::string a = argv[i];
+
+        if (a == "--recover") {
+            recover = true;
+            continue;
+        }
+
+        if (a == "--help" || a == "-h") {
+            print_usage();
+            return 0;
+        }
+    }
+
     ConfigParser cfg;
     if (!cfg.read("cfg/config.ini")) {
         std::cerr << "failed to open cfg/config.ini\n";
@@ -63,7 +87,10 @@ int Application::run() {
     const std::string heartbeat_interval_str = cfg.get("dropcopy", "heartbeat_interval");
 
     const int server_port = std::stoi(server_port_str);
-    const bool reset_on_logon = (reset_on_logon_str == "true");
+    bool reset_on_logon = (reset_on_logon_str == "true");
+    if (recover) {
+        reset_on_logon = false;
+    }
 
     int heart_bt_int = 30;
     if (!heartbeat_interval_str.empty()) {
