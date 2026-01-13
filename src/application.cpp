@@ -142,6 +142,8 @@ int Application::run() {
                             session.on_incoming_seq_num(cur);
                             cur = session.get_expected_incoming_seq_num();
                         }
+                        seq_store.save_expected_incoming_seq(sender_comp_id, target_comp_id,
+                                                             session.get_expected_incoming_seq_num());
                     }
                 }
                 continue;
@@ -165,6 +167,8 @@ int Application::run() {
             // Seq Ok, Move to next expected
             if (in_seq > 0) {
                 session.on_incoming_seq_num(in_seq);
+                seq_store.save_expected_incoming_seq(sender_comp_id, target_comp_id,
+                                                     session.get_expected_incoming_seq_num());
             }
 
             if (msg_type == "1") {
